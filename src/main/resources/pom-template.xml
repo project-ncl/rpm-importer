@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.jboss.pnc.rpm</groupId>
+    <artifactId>x</artifactId>
+    <version>0</version>
+    <packaging>spec</packaging>
+
+    <name></name>
+
+    <organization>
+        <name>Red Hat, Inc.</name>
+        <url>https://www.redhat.com/</url>
+    </organization>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <!-- Can't use project.version as this project may be built differently to dependent build -->
+        <wrappedBuild></wrappedBuild>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.8.1</version>
+                <executions>
+                    <!-- This execution handles the built dependent jars -->
+                    <execution>
+                        <id>copy</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                            </artifactItems>
+                            <outputDirectory>${basedir}</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+
+            <plugin>
+                <groupId>org.jboss.pnc</groupId>
+                <artifactId>rpm-builder-maven-plugin</artifactId>
+                <version>1.2</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <macros>
+                        <!-- Insert macros to be used at RPM build time e.g. -->
+                        <!-- <dist>.el7eap</dist> -->
+                    </macros>
+                    <changeLog>
+                        <generate>true</generate>
+                        <email>project-ncl@redhat.com</email>
+                    </changeLog>
+                    <groovyPatch>
+                        // Note the spec file is always copied to target/spec first so modify it there.
+                        def spec = new File("${project.build.directory}/spec/apache-sshd.spec")
+                        def contents = spec.getText('UTF-8')
+
+                        // Spec Manipulation Example:
+                        // Apache-SSH source hack to ensure subdirectory creation is correctly named.
+                        // contents = contents.replaceAll("%setup -q -n sshd-", "%setup -q -n apache-sshd-")
+
+                        contents = """
+                        %global meadversion ${meadversion}
+                        %define namedversion ${wrappedBuild}
+                        %global meadalpha ${meadalpha}
+                        %global meadrel ${meadrel}
+                        %global serial ${serial}
+                        %define maven_version ${wrappedBuild}
+
+                        %if %with mead
+                        Source100:
+                        %endif
+
+                        """ + contents
+                        spec.write(contents)
+                    </groovyPatch>
+                </configuration>
+            </plugin>
+
+        </plugins>
+    </build>
+</project>

@@ -39,7 +39,7 @@ jobs:
       with:
         maven-version:  3.9.8
     - name: Build with Maven
-      run: mvn -B -V install -Prun-its -Dvalidate-format
+      run: mvn -B -V install -Dvalidate-format
   snapshot:
     if: github.repository == 'project-ncl/rpm-importer' && github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest

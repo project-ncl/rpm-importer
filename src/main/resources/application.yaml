@@ -1,0 +1,26 @@
+quarkus:
+  package:
+    jar:
+      type: uber-jar
+      add-runner-suffix: false
+  application:
+    name: rpm-importer
+  log:
+    category:
+      "org.jboss.resteasy.reactive.client.logging":
+        level: WARN
+      "org.jboss.pnc.rpm":
+        level: INFO
+      # Avoids "Invalid cookie header" messages from old httpclient from keycloak from bacon.
+      "org.apache.http.client.protocol":
+        level: ERROR
+#    console:
+#      format: "%d{HH:mm:ss,SSS} %-5p traceId=%X{traceId}, parentId=%X{parentId}, spanId=%X{spanId}, sampled=%X{sampled} [%c{3.}] (%t) %s%e mdc:[%X]%n"
+  rest-client:
+    logging:
+      scope: request-response
+      body-limit: 50
+    orch-service:
+      url: "https://localhost:8080"
+    reqour-service:
+      url: "https://localhost:8080"
