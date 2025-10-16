@@ -57,9 +57,8 @@
                 <version>1.2</version>
                 <extensions>true</extensions>
                 <configuration>
+                    <!-- Insert macros to be used at RPM build time -->
                     <macros>
-                        <!-- Insert macros to be used at RPM build time e.g. -->
-                        <!-- <dist>.el7eap</dist> -->
                     </macros>
                     <changeLog>
                         <generate>true</generate>
@@ -67,7 +66,7 @@
                     </changeLog>
                     <groovyPatch>
                         // Note the spec file is always copied to target/spec first so modify it there.
-                        def spec = new File("${project.build.directory}/spec/apache-sshd.spec")
+                        def spec = new File("${project.build.directory}/spec/template.spec")
                         def contents = spec.getText('UTF-8')
 
                         // Spec Manipulation Example:

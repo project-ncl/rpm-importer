@@ -13,4 +13,13 @@ public class Brew {
                 "getBuild",
                 nvr);
     }
+
+    public static String getTagInfo(String tag) {
+        return ProcessBuilder.execToString(
+                BREW,
+                "call",
+                "--json-output",
+                "getTag",
+                tag);
+    }
 }

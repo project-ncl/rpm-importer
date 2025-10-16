@@ -44,6 +44,7 @@ class UtilsTest {
         Path result = Utils.cloneRepository("https://github.com/project-ncl/rpm-importer.git", "main");
 
         File pom = new File(result.toString(), "pom.xml");
+        //noinspection ResultOfMethodCallIgnored
         pom.createNewFile();
 
         Utils.commitAndPushRepository(result, false);
@@ -62,5 +63,14 @@ class UtilsTest {
         assertTrue(Utils.checkForRemoteRepositoryAndBranch(url, "main"));
         assertFalse(Utils.checkForRemoteRepositoryAndBranch(url, "main-INVALID"));
         assertFalse(Utils.checkForRemoteRepositoryAndBranch(url + "-INVALID", "main"));
+    }
+
+    @Test
+    void testReadTemplate() throws IOException {
+        String template = Utils.readTemplate();
+        assertTrue(template.contains("""
+                                <groupId>org.jboss.pnc</groupId>
+                                <artifactId>rpm-builder-maven-plugin</artifactId>
+                """));
     }
 }

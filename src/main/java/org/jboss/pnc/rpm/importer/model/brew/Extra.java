@@ -1,16 +1,21 @@
 package org.jboss.pnc.rpm.importer.model.brew;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @JsonPropertyOrder({
         "external_build_system",
         "external_build_id",
         "maven",
         "build_system",
         "import_initiator",
+        "rhpkg_scl_prefix",
+        "rpm.macro.dist",
+        "rpm.macro.scl",
         "scmTag",
         "typeinfo"
 })
@@ -26,6 +31,12 @@ public class Extra {
     private String buildSystem;
     @JsonProperty("import_initiator")
     private String importInitiator;
+    @JsonProperty("rhpkg_scl_prefix")
+    private String rhpkgSclPrefix;
+    @JsonProperty("rpm.macro.dist")
+    private String rpmMacroDist;
+    @JsonProperty("rpm.macro.scl")
+    private String rpmMacroScl;
     @JsonProperty("scmTag")
     private String scmTag;
     @JsonProperty("typeinfo")
@@ -81,6 +92,36 @@ public class Extra {
         this.importInitiator = importInitiator;
     }
 
+    @JsonProperty("rpm.macro.dist")
+    public String getRpmMacroDist() {
+        return rpmMacroDist;
+    }
+
+    @JsonProperty("rpm.macro.dist")
+    public void setRpmMacroDist(String rpmMacroDist) {
+        this.rpmMacroDist = rpmMacroDist;
+    }
+
+    @JsonProperty("rpm.macro.scl")
+    public String getRpmMacroScl() {
+        return rpmMacroScl;
+    }
+
+    @JsonProperty("rpm.macro.scl")
+    public void setRpmMacroScl(String rpmMacroScl) {
+        this.rpmMacroScl = rpmMacroScl;
+    }
+
+    @JsonProperty("rhpkg_scl_prefix")
+    public String getRhpkgSclPrefix() {
+        return rhpkgSclPrefix;
+    }
+
+    @JsonProperty("rhpkg_scl_prefix")
+    public void setRhpkgSclPrefix(String rhpkgSclPrefix) {
+        this.rhpkgSclPrefix = rhpkgSclPrefix;
+    }
+
     @JsonProperty("scmTag")
     public String getScmTag() {
         return scmTag;
@@ -100,5 +141,4 @@ public class Extra {
     public void setTypeinfo(Typeinfo typeinfo) {
         this.typeinfo = typeinfo;
     }
-
 }

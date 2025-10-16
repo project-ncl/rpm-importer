@@ -1,7 +1,9 @@
 package org.jboss.pnc.rpm.importer.utils;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -30,6 +32,14 @@ public class Utils {
         }
     }
 
+
+    public static String readTemplate() throws IOException {
+        try (InputStream x = Utils.class.getClassLoader().getResourceAsStream("pom-template.xml")) {
+            assert x != null;
+            return new String(x.readAllBytes(), StandardCharsets.UTF_8);
+        }
+    }
+
     /**
      * The format of the file is
      *
@@ -54,7 +64,7 @@ public class Utils {
      * {@code <pkg> <optionalTag>}
      * </pre>
      *
-     * We only want the meadversion.
+     * We only want the mead package.
      *
      * @param path the directory where the ETT files are
      * @return a parsed String version

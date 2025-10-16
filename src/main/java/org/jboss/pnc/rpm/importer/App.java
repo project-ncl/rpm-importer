@@ -1,5 +1,6 @@
 package org.jboss.pnc.rpm.importer;
 
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static org.maveniverse.domtrip.maven.MavenPomElements.Elements.ARTIFACT_ID;
 import static org.maveniverse.domtrip.maven.MavenPomElements.Elements.BUILD;
 import static org.maveniverse.domtrip.maven.MavenPomElements.Elements.CLASSIFIER;
@@ -14,14 +15,13 @@ import static org.maveniverse.domtrip.maven.MavenPomElements.Elements.VERSION;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang.StringUtils;
 import org.commonjava.atlas.maven.ident.ref.SimpleArtifactRef;
@@ -45,6 +45,7 @@ import org.jboss.pnc.dto.response.RepositoryCreationResponse;
 import org.jboss.pnc.rpm.importer.clients.OrchService;
 import org.jboss.pnc.rpm.importer.clients.ReqourService;
 import org.jboss.pnc.rpm.importer.model.brew.BuildInfo;
+import org.jboss.pnc.rpm.importer.model.brew.TagInfo;
 import org.jboss.pnc.rpm.importer.utils.Brew;
 import org.jboss.pnc.rpm.importer.utils.Utils;
 import org.maveniverse.domtrip.maven.PomEditor;
@@ -99,7 +100,7 @@ public class App implements Runnable {
     @Option(
             names = "--repository",
             description = "Skips cloning and uses existing repository")
-    private Path repository;
+    Path repository;
 
     @Option(
             names = "--skip-sync",
@@ -138,8 +139,15 @@ public class App implements Runnable {
         }
         PncConfig pncConfig = Config.instance().getActiveProfile().getPnc();
         Configuration pncConfiguration = PncClientHelper.getPncConfiguration();
-
         ReqourConfig reqourConfig = Config.instance().getActiveProfile().getReqour();
+        if (reqourConfig == null) {
+            log.error("""
+                    Configure reqour within the Bacon config file i.e.:
+                      reqour:
+                         url: "https://reqour.pnc.<as other URLS...>"
+                    """);
+            throw new RuntimeException("No reqour configuration found.");
+        }
         TranslateResponse translateResponse = reqourService.external_to_internal(
                 reqourConfig.getUrl(),
                 TranslateRequest.builder().externalUrl(url).build());
@@ -223,14 +231,16 @@ public class App implements Runnable {
                     artifactId);
             List<SimpleArtifactRef> dependencies = getDependencies(pncConfig, pncConfiguration, lastMeadBuild);
 
-            String source;
-            try (InputStream x = App.class.getClassLoader().getResourceAsStream("pom-template.xml")) {
-                assert x != null;
-                source = new String(x.readAllBytes(), StandardCharsets.UTF_8);
-            }
+            TagInfo tagInfo = MAPPER.readValue(
+                    Brew.getTagInfo(branch + "-build"),
+                    TagInfo.class);
 
-            // Replace the Source100 marker in the template. Easier to do via string replace rather than
-            // searching for the element.
+            String source = Utils.readTemplate();
+
+            source = updateSpecName(source);
+
+            // Replace the Source100 marker in the template. Easier to do via string
+            // replace rather than searching for the element.
             Optional<SimpleArtifactRef> projectSources = dependencies.stream()
                     .filter(a -> "project-sources".equals(a.getClassifier()))
                     .findFirst();
@@ -308,6 +318,8 @@ public class App implements Runnable {
                 }
             });
 
+            updateMacros(pomEditor, plugins, tagInfo);
+
             Files.writeString(target.toPath(), pomEditor.toXml());
 
             Utils.commitAndPushRepository(repository, push);
@@ -315,6 +327,43 @@ public class App implements Runnable {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    void updateMacros(PomEditor pomEditor, Element plugins, TagInfo tagInfo) {
+        // findFirst as the template only has one plugin with this artifactId
+        var plugin = plugins.children()
+                .filter(
+                        element -> pomEditor.findChildElement(element, "artifactId")
+                                .textContent()
+                                .equals("rpm-builder-maven-plugin"))
+                .findFirst();
+        // We know the template is a specific format so don't need to use isPresent.
+        @SuppressWarnings("OptionalGetWithoutIsPresent")
+        Element macros = plugin.get().child("configuration").get().child("macros").get();
+        if (isNotEmpty(tagInfo.getExtra().getRhpkgSclPrefix())) {
+            pomEditor.insertMavenElement(macros, "scl", tagInfo.getExtra().getRhpkgSclPrefix());
+        }
+        if (isNotEmpty(tagInfo.getExtra().getRpmMacroScl())) {
+            pomEditor.insertMavenElement(macros, "scl", tagInfo.getExtra().getRpmMacroScl());
+        }
+        if (isNotEmpty(tagInfo.getExtra().getRpmMacroDist())) {
+            pomEditor.insertMavenElement(macros, "dist", tagInfo.getExtra().getRpmMacroDist());
+        }
+    }
+
+    String updateSpecName(String source) throws IOException {
+        // Replace the "template.spec" marker in the template. Easier to do via
+        // string replace.
+        try (Stream<Path> stream = Files.walk(repository, 1)) {
+            var r = stream.filter(m -> m.toFile().getName().endsWith(".spec")).toList();
+            if (r.size() > 1) {
+                log.error("Multiple spec files found: {}", r);
+            } else {
+                log.info("Replacing template.spec marker with: {}", r.getFirst().toFile().getName());
+                return source.replaceAll("template.spec", r.getFirst().toFile().getName());
+            }
+        }
+        return source;
     }
 
     List<SimpleArtifactRef> getDependencies(
