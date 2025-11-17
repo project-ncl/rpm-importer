@@ -151,7 +151,7 @@
     <dependency>
       <groupId>org.commonjava.maven.ext</groupId>
       <artifactId>pom-manipulation-common</artifactId>
-      <version>4.21</version>
+      <version>4.22</version>
       <exclusions>
         <exclusion>
           <!-- Only want ManifestUtils and this brings in galley with com.sun:tools otherwise -->
