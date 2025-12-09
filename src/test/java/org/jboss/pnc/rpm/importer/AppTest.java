@@ -11,8 +11,6 @@ import java.nio.file.Path;
 import java.util.Optional;
 
 import org.commonjava.atlas.maven.ident.ref.SimpleArtifactRef;
-import org.jboss.pnc.rpm.importer.model.brew.Extra;
-import org.jboss.pnc.rpm.importer.model.brew.TagInfo;
 import org.jboss.pnc.rpm.importer.utils.Utils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -42,14 +40,12 @@ class AppTest {
         Document document = Document.of(source);
         PomEditor pomEditor = new PomEditor(document);
         Element plugins = pomEditor.findChildElement(pomEditor.findChildElement(pomEditor.root(), BUILD), PLUGINS);
-        TagInfo tagInfo = new TagInfo();
-        Extra extra = new Extra();
-        tagInfo.setExtra(extra);
-        extra.setRpmMacroDist("MY-CUSTOM-MACRO");
-
+        Macros macros = Macros.builder()
+                .dist("MY-CUSTOM-MACRO")
+                .build();
         App app = new App();
         app.repository = tempDir;
-        app.updateMacros(pomEditor, plugins, tagInfo);
+        app.updateMacros(pomEditor, plugins, macros);
 
         String result = pomEditor.toXml();
         assertTrue(result.contains("""

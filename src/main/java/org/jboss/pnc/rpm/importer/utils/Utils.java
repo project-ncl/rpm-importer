@@ -12,8 +12,6 @@ import java.time.Duration;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.TextProgressMonitor;
-import org.jboss.pnc.rpm.importer.model.brew.BuildInfo;
-import org.jboss.pnc.rpm.importer.model.brew.Typeinfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -171,28 +169,4 @@ public class Utils {
         return monitor;
     }
 
-    /**
-     * This function validates that the buildInfo read from Brew contains a valid Maven object. If
-     * only a legacy Maven block is found (i.e. Extra/Maven instead of Extra/TypeInfo/Maven) then
-     * it will also copy that to the typeInfo/Maven block to make future processing easier.
-     *
-     * @param buildInfo BuildInfo object to validate
-     * @return true if a valid Maven block is found, else false
-     */
-    public static boolean validateBuildInfo(BuildInfo buildInfo) {
-        if (buildInfo.getExtra() != null) {
-            if (buildInfo.getExtra().getTypeinfo() != null && buildInfo.getExtra().getTypeinfo().getMaven() != null) {
-                return true;
-            } else {
-                if (buildInfo.getExtra().getMaven() != null) {
-                    log.warn("Legacy typeinfo detected for {}", buildInfo.getName());
-                    Typeinfo typeInfo = new Typeinfo();
-                    typeInfo.setMaven(buildInfo.getExtra().getMaven());
-                    buildInfo.getExtra().setTypeinfo(typeInfo);
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
 }

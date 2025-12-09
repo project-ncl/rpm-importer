@@ -1,23 +1,12 @@
 package org.jboss.pnc.rpm.importer;
 
-import static eu.maveniverse.domtrip.maven.MavenPomElements.Elements.ARTIFACT_ID;
-import static eu.maveniverse.domtrip.maven.MavenPomElements.Elements.BUILD;
-import static eu.maveniverse.domtrip.maven.MavenPomElements.Elements.CLASSIFIER;
-import static eu.maveniverse.domtrip.maven.MavenPomElements.Elements.DEPENDENCIES;
-import static eu.maveniverse.domtrip.maven.MavenPomElements.Elements.DEPENDENCY_MANAGEMENT;
-import static eu.maveniverse.domtrip.maven.MavenPomElements.Elements.GROUP_ID;
-import static eu.maveniverse.domtrip.maven.MavenPomElements.Elements.NAME;
-import static eu.maveniverse.domtrip.maven.MavenPomElements.Elements.PLUGINS;
-import static eu.maveniverse.domtrip.maven.MavenPomElements.Elements.PROPERTIES;
-import static eu.maveniverse.domtrip.maven.MavenPomElements.Elements.TYPE;
-import static eu.maveniverse.domtrip.maven.MavenPomElements.Elements.VERSION;
+import static eu.maveniverse.domtrip.maven.MavenPomElements.Elements.*;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -25,7 +14,6 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang.StringUtils;
-import org.commonjava.atlas.maven.ident.ref.ArtifactRef;
 import org.commonjava.atlas.maven.ident.ref.SimpleArtifactRef;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -46,16 +34,11 @@ import org.jboss.pnc.dto.response.Page;
 import org.jboss.pnc.dto.response.RepositoryCreationResponse;
 import org.jboss.pnc.rpm.importer.clients.OrchService;
 import org.jboss.pnc.rpm.importer.clients.ReqourService;
-import org.jboss.pnc.rpm.importer.model.brew.BuildInfo;
-import org.jboss.pnc.rpm.importer.model.brew.Extra;
-import org.jboss.pnc.rpm.importer.model.brew.Maven;
-import org.jboss.pnc.rpm.importer.model.brew.TagInfo;
-import org.jboss.pnc.rpm.importer.model.brew.Typeinfo;
-import org.jboss.pnc.rpm.importer.utils.Brew;
 import org.jboss.pnc.rpm.importer.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import eu.maveniverse.domtrip.Document;
@@ -124,10 +107,18 @@ public class App implements Runnable {
 
     @Option(
             names = "--lastMeadBuild",
-            description = "Override the value found from last-mead-build. Accepts a Maven GAV.")
+            description = "Override the value found from last-mead-build. Accepts a Maven GAV.",
+            required = true)
     private String lastMeadBuildOverride;
 
     // TODO: Should we create an option to pass in a set of macros.
+    @Option(
+            names = "--dist")
+    private String macroDist;
+
+    @Option(
+            names = "--scl")
+    private String macroScl;
 
     @Override
     public void run() {
@@ -221,25 +212,7 @@ public class App implements Runnable {
         try {
             // While we have the last-mead-build value this is not reversible into a GAV. However if we call onto
             // brew we can obtain the GAV from the NVR.
-            String lastMeadBuildFile = Files.readString(Paths.get(repository.toString(), "last-mead-build")).trim();
-            String buildInfo = Brew.getBuildInfo(lastMeadBuildFile);
-            BuildInfo lastMeadBuild = MAPPER.readValue(
-                    buildInfo,
-                    BuildInfo.class);
-
-            log.debug("Retrieved BuildInfo\n{}", buildInfo);
-            if (!Utils.validateBuildInfo(lastMeadBuild)) {
-                log.error("This build was not built in PNC: {}", buildInfo);
-                throw new RuntimeException(
-                        "The build " + lastMeadBuildFile
-                                + " must be ported to PNC before attempting to wrap it in a RPM");
-            }
-            log.info(
-                    "Found last-mead-build {} with GAV {}:{}:{}",
-                    lastMeadBuildFile,
-                    lastMeadBuild.getExtra().getTypeinfo().getMaven().getGroupId(),
-                    lastMeadBuild.getExtra().getTypeinfo().getMaven().getArtifactId(),
-                    lastMeadBuild.getExtra().getTypeinfo().getMaven().getVersion());
+            GAV lastMeadBuild = GAV.parse(lastMeadBuildOverride);
             String version = Utils.parseVersionReleaseSerial(repository);
             log.info("Found version: {}", version);
             // We want to ensure the artifact names are completely unique. Unlike in brew if
@@ -249,34 +222,17 @@ public class App implements Runnable {
             //       Another (currently chosen) also uses the groupId e.g.
             //           org.jboss.pnc.rpm.org.apache.sshd : sshd-jb-eap-7.4-rhel-7
             //       Latter needs NVR -> GAV conversion
-            String groupId = "org.jboss.pnc.rpm." + lastMeadBuild.getExtra().getTypeinfo().getMaven().getGroupId();
-            String artifactId = lastMeadBuild.getExtra().getTypeinfo().getMaven().getArtifactId() + "-" + branch;
+            String groupId = "org.jboss.pnc.rpm." + lastMeadBuild.getGroupId();
+            String artifactId = lastMeadBuild.getArtifactId() + "-" + branch;
             log.info(
                     "Setting groupId : artifactId to comprise of scoped groupId and branch name: {}:{}",
                     groupId,
                     artifactId);
 
-            BuildInfo lastMeadBuildForDeps = lastMeadBuild;
-            if (lastMeadBuildOverride != null) {
-                ArtifactRef artifactRef = SimpleArtifactRef.parse(lastMeadBuildOverride);
-                lastMeadBuildForDeps = new BuildInfo();
-                lastMeadBuildForDeps.setExtra(new Extra());
-                lastMeadBuildForDeps.getExtra().setTypeinfo(new Typeinfo());
-                lastMeadBuildForDeps.getExtra().getTypeinfo().setMaven(new Maven());
-                lastMeadBuildForDeps.getExtra().getTypeinfo().getMaven().setGroupId(artifactRef.getGroupId());
-                lastMeadBuildForDeps.getExtra().getTypeinfo().getMaven().setArtifactId(artifactRef.getArtifactId());
-                lastMeadBuildForDeps.getExtra().getTypeinfo().getMaven().setVersion(artifactRef.getVersionString());
-                version = artifactRef.getVersionString();
-                log.info(
-                        "Overriding lastMeadBuild with {} and version to {}",
-                        artifactRef,
-                        version);
-            }
+            GAV lastMeadBuildForDeps = GAV.parse(lastMeadBuildOverride);
             List<SimpleArtifactRef> dependencies = getDependencies(pncConfig, pncConfiguration, lastMeadBuildForDeps);
 
-            TagInfo tagInfo = MAPPER.readValue(
-                    Brew.getTagInfo(branch + "-build"),
-                    TagInfo.class);
+            Macros macros = getMacros();
 
             String source = Utils.readTemplate();
 
@@ -313,8 +269,8 @@ public class App implements Runnable {
             pomEditor.dependencies()
                     .addDependency(
                             deps,
-                            lastMeadBuild.getExtra().getTypeinfo().getMaven().getGroupId(),
-                            lastMeadBuild.getExtra().getTypeinfo().getMaven().getArtifactId(),
+                            lastMeadBuild.getGroupId(),
+                            lastMeadBuild.getArtifactId(),
                             "${wrappedBuild}");
 
             Element plugins = pomEditor.findChildElement(pomEditor.findChildElement(pomEditor.root(), BUILD), PLUGINS);
@@ -350,7 +306,7 @@ public class App implements Runnable {
                 }
             });
 
-            updateMacros(pomEditor, plugins, tagInfo);
+            updateMacros(pomEditor, plugins, macros);
 
             Files.writeString(target.toPath(), pomEditor.toXml());
 
@@ -361,7 +317,11 @@ public class App implements Runnable {
         }
     }
 
-    void updateMacros(PomEditor pomEditor, Element plugins, TagInfo tagInfo) {
+    private Macros getMacros() throws JsonProcessingException {
+        return new Macros(macroScl, macroDist);
+    }
+
+    void updateMacros(PomEditor pomEditor, Element plugins, Macros macros) {
         // findFirst as the template only has one plugin with this artifactId
         var plugin = plugins.children()
                 .filter(
@@ -371,15 +331,12 @@ public class App implements Runnable {
                 .findFirst();
         // We know the template is a specific format so don't need to use isPresent.
         @SuppressWarnings("OptionalGetWithoutIsPresent")
-        Element macros = plugin.get().child("configuration").get().child("macros").get();
-        if (isNotEmpty(tagInfo.getExtra().getRhpkgSclPrefix())) {
-            pomEditor.insertMavenElement(macros, "scl", tagInfo.getExtra().getRhpkgSclPrefix());
+        Element macrosElement = plugin.get().child("configuration").get().child("macros").get();
+        if (isNotEmpty(macros.getScl())) {
+            pomEditor.insertMavenElement(macrosElement, "scl", macros.getScl());
         }
-        if (isNotEmpty(tagInfo.getExtra().getRpmMacroScl())) {
-            pomEditor.insertMavenElement(macros, "scl", tagInfo.getExtra().getRpmMacroScl());
-        }
-        if (isNotEmpty(tagInfo.getExtra().getRpmMacroDist())) {
-            pomEditor.insertMavenElement(macros, "dist", tagInfo.getExtra().getRpmMacroDist());
+        if (isNotEmpty(macros.getDist())) {
+            pomEditor.insertMavenElement(macrosElement, "dist", macros.getDist());
         }
     }
 
@@ -419,7 +376,7 @@ public class App implements Runnable {
     List<SimpleArtifactRef> getDependencies(
             PncConfig pncConfig,
             Configuration pncConfiguration,
-            BuildInfo lastMeadBuild) {
+            GAV gav) {
         // Unfortunately, this is somewhat heavyweight. We need all the artifacts produced by this
         // build. I think this is currently only possible by retrieving the artifactId for the GAV,
         // then the artifact for that Id and finally using the buildId from the previous, retrieve all
@@ -429,10 +386,10 @@ public class App implements Runnable {
                 pncConfiguration.getBearerTokenSupplier().get(),
                 String.format(
                         "%s:%s:%s:%s",
-                        lastMeadBuild.getExtra().getTypeinfo().getMaven().getGroupId(),
-                        lastMeadBuild.getExtra().getTypeinfo().getMaven().getArtifactId(),
+                        gav.getGroupId(),
+                        gav.getArtifactId(),
                         "pom",
-                        lastMeadBuild.getExtra().getTypeinfo().getMaven().getVersion()));
+                        gav.getVersion()));
 
         var found = allArtifacts.getContent().stream().findFirst();
         if (found.isPresent()) {
@@ -451,7 +408,7 @@ public class App implements Runnable {
             String buildId = artifact.getBuild().getId();
             log.debug(
                     "For artifact {} found artifactId {} with buildId {}",
-                    lastMeadBuild.getExtra().getTypeinfo().getMaven(),
+                    gav,
                     artifactId,
                     buildId);
 
@@ -478,7 +435,7 @@ public class App implements Runnable {
             return result;
         } else {
             // TODO: Should this be an error? This would imply there is no existing build in PNC to be wrapped.
-            log.error("Unable to find an artifact from GAV {}", lastMeadBuild.getExtra().getTypeinfo().getMaven());
+            log.error("Unable to find an artifact from GAV {}", gav);
         }
         return Collections.emptyList();
     }
