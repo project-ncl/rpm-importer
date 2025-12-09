@@ -75,17 +75,16 @@
                         // contents = contents.replaceAll("%setup -q -n sshd-", "%setup -q -n apache-sshd-")
 
                         contents = """
-                        %global meadversion ${meadversion}
-                        %define namedversion ${wrappedBuild}
-                        %global meadalpha ${meadalpha}
-                        %global meadrel ${meadrel}
-                        %global serial ${serial}
-                        %define maven_version ${wrappedBuild}
+%global meadversion ${meadversion}
+%define namedversion ${wrappedBuild}
+%global meadalpha ${meadalpha}
+%global meadrel ${meadrel}
+%global serial ${serial}
+%define maven_version ${wrappedBuild}
 
-                        %if %with mead
-                        Source100:
-                        %endif
-
+%if %with mead
+Source100:
+%endif
                         """ + contents
                         spec.write(contents)</groovyPatch>
         </configuration>
