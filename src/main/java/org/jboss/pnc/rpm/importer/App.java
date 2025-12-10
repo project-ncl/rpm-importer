@@ -223,7 +223,7 @@ public class App implements Runnable {
             //           org.jboss.pnc.rpm.org.apache.sshd : sshd-jb-eap-7.4-rhel-7
             //       Latter needs NVR -> GAV conversion
             String groupId = "org.jboss.pnc.rpm." + lastMeadBuild.getGroupId();
-            String artifactId = lastMeadBuild.getArtifactId() + "-" + branch;
+            String artifactId = (lastMeadBuild.getArtifactId() + "-rpm-" + branch).replaceAll("\\.", "-");
             log.info(
                     "Setting groupId : artifactId to comprise of scoped groupId and branch name: {}:{}",
                     groupId,
