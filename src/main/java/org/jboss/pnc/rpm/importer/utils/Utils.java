@@ -1,5 +1,13 @@
 package org.jboss.pnc.rpm.importer.utils;
 
+import io.smallrye.common.process.ProcessBuilder;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.EmptyCommitException;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.lib.TextProgressMonitor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
@@ -8,14 +16,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
-
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.lib.TextProgressMonitor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import io.smallrye.common.process.ProcessBuilder;
 
 public class Utils {
     private static final Logger log = LoggerFactory.getLogger(Utils.class);
@@ -106,19 +106,21 @@ public class Utils {
     public static void commitAndPushRepository(Path repository, boolean push) {
         try (var jGit = Git.init().setDirectory(repository.toFile()).call()) {
             jGit.add().addFilepattern("pom.xml").call();
-
             var revCommit = jGit.commit()
                     .setNoVerify(true)
                     .setAuthor("ProjectNCL", "")
                     .setMessage("RPM-Importer - POM Generation")
+                    .setAllowEmpty(false)
                     .call();
             log.info("Added and committed pom.xml ({})", revCommit.getName());
-
             if (push) {
                 StringWriter writer = new StringWriter();
                 jGit.push().setProgressMonitor(getMonitor(writer)).call();
                 log.info("Push summary:\n{}", writer.toString().replaceAll("(?m)^\\s+", ""));
             }
+        } catch (EmptyCommitException ex) {
+            // avoid empty commit to avoid PNC rebuilds
+            log.info("Nothing to commit");
         } catch (GitAPIException e) {
             throw new RuntimeException(e);
         }
