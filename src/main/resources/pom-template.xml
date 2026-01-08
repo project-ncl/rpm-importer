@@ -62,6 +62,7 @@
         <version>1.4</version>
         <extensions>true</extensions>
         <configuration>
+          <attachZip>true</attachZip>
           <!-- Insert macros to be used at RPM build time -->
           <macros/>
           <changeLog>
