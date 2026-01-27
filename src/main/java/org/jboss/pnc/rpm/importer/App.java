@@ -272,7 +272,8 @@ public class App implements Runnable {
             if (overrideVersionOptions == null || overrideVersionOptions.gavOverride == null) {
                 // While we have the last-mead-build value this is not reversible into a GAV. However if we call onto
                 // brew we can obtain the GAV from the NVR.
-                String lastMeadBuildFile = Files.readString(Paths.get(repository.toString(), ETT.LAST_MEAD_BUILD)).trim();
+                String lastMeadBuildFile = Files.readString(Paths.get(repository.toString(), ETT.LAST_MEAD_BUILD))
+                        .trim();
                 String buildInfo = Brew.getBuildInfo(lastMeadBuildFile);
                 lastMeadBuild = MAPPER.readValue(
                         buildInfo,
@@ -292,10 +293,12 @@ public class App implements Runnable {
                         lastMeadBuild.getExtra().getTypeinfo().getMaven().getGroupId(),
                         lastMeadBuild.getExtra().getTypeinfo().getMaven().getArtifactId(),
                         lastMeadBuild.getExtra().getTypeinfo().getMaven().getVersion());
-                version = Utils.parseNamedVersionFromVersionReleaseSerial(repository);
                 name = Utils.parseMeadPkgName(repository);
                 originalVersion = Utils.parseOriginalVersionFromVersionReleaseSerial(repository);
-                log.info("Found version: {} and original version: {}", version, originalVersion);
+                log.info(
+                        "Found version: {} and original version: {}",
+                        lastMeadBuild.getExtra().getTypeinfo().getMaven().getVersion(),
+                        originalVersion);
             } else {
                 ArtifactRef artifactRef = SimpleArtifactRef.parse(overrideVersionOptions.gavOverride);
                 lastMeadBuild = new BuildInfo();
@@ -305,7 +308,6 @@ public class App implements Runnable {
                 lastMeadBuild.getExtra().getTypeinfo().getMaven().setGroupId(artifactRef.getGroupId());
                 lastMeadBuild.getExtra().getTypeinfo().getMaven().setArtifactId(artifactRef.getArtifactId());
                 lastMeadBuild.getExtra().getTypeinfo().getMaven().setVersion(artifactRef.getVersionString());
-                version = artifactRef.getVersionString();
                 originalVersion = overrideVersionOptions.originalVersionOverride;
                 name = artifactRef.getGroupId() + "-" + artifactRef.getArtifactId();
                 log.info(
@@ -364,7 +366,7 @@ public class App implements Runnable {
             pomEditor.findChildElement(pomEditor.root(), VERSION)
                     .textContent(originalVersion);
             pomEditor.findChildElement(pomEditor.findChildElement(pomEditor.root(), PROPERTIES), "wrappedBuild")
-                    .textContent(version);
+                    .textContent(originalVersion);
             Element depMgmt = pomEditor.findChildElement(pomEditor.root(), DEPENDENCY_MANAGEMENT);
             Element deps = pomEditor.findChildElement(depMgmt, DEPENDENCIES);
             pomEditor.dependencies()

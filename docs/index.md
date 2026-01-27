@@ -75,7 +75,7 @@ Notes:
 * Unless `--push` is supplied the tool will only commit changes locally and **not** push to the remote. It is highly recommended that the user checks the resulting `pom.xml` before _manually_ running any git push.
 * Skipping repository syncing only makes sense if the repository has already been mirrored to GitLab. This might be the case if the user is switching between multiple branches or regenerating the pom.
 * Using an existing locally cloned repository is useful for local debugging or regenerating the pom.
-* It uses last-mead-build to retrieve the NVR and examine the Brew extra information and the typeinfo. If this typeinfo that contains a Maven GAV does not correspond to a valid type (which we have seen happen with Hibernate) then use the `--gav` (or `--lastMeadBuild`) to pass in a valid GAV from the build within PNC. It must be a GAV from a Red Hat build from PNC. When using this option the `--originalGAV` must also be supplied.
+* It uses last-mead-build to retrieve the NVR and examine the Brew extra information and the typeinfo. If this typeinfo that contains a Maven GAV does not correspond to a valid type (which we have seen happen with Hibernate) then use the `--gav` (or `--lastMeadBuild`) to pass in a valid GAV from the build within PNC. It must be a GAV from a Red Hat build from PNC. When using this option the `--originalVersion` must also be supplied.
 * If using `--gav`/`--lastMeadBuild` the GAV that is passed in **MUST** be the top level GAV in the build.
 * It uses the following files from ETT when generating the POM:
   * `last-mead-build`
