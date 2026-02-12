@@ -33,6 +33,8 @@ You must be a member of `jboss-prod` so you have access to repositories created 
 
 Brew access via Kerberos is also required **unless** you override both the Brew tag lookup to determine macros (via `--macros`) and the MEAD NVR lookup via `--gav` (or `--lastMeadBuild`).
 
+This tool is tested and supported on **JDK 21**.
+
 ### Usage
 
 
