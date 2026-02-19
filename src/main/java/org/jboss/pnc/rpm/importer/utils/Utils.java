@@ -3,11 +3,17 @@ package org.jboss.pnc.rpm.importer.utils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.EmptyCommitException;
@@ -22,6 +28,10 @@ import io.smallrye.common.process.ProcessBuilder;
 
 public class Utils {
     private static final Logger log = LoggerFactory.getLogger(Utils.class);
+
+    private static final String RPM_BUILDER_PLUGIN_METADATA_URL = "https://repo1.maven.org/maven2/org/jboss/pnc/rpm-builder-maven-plugin/maven-metadata.xml";
+    private static final Pattern LATEST_VERSION_PATTERN = Pattern.compile("<latest>([^<]+)</latest>");
+    private static final Pattern RELEASE_VERSION_PATTERN = Pattern.compile("<release>([^<]+)</release>");
 
     public static Path createTempDirForCloning() {
         return createTempDir("clone-", "cloning");
@@ -186,6 +196,45 @@ public class Utils {
                 })
                 .run();
         return holder.exitCode == 0;
+    }
+
+    /**
+     * Fetches the latest version of org.jboss.pnc:rpm-builder-maven-plugin from Maven Central.
+     *
+     * @return the latest version string (e.g. "1.5")
+     * @throws IOException if the request fails or the response cannot be parsed
+     * @throws InterruptedException if the request is interrupted
+     */
+    public static String getLatestRpmBuilderMavenPluginVersion() throws IOException, InterruptedException {
+        HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(RPM_BUILDER_PLUGIN_METADATA_URL))
+                .GET()
+                .build();
+        HttpResponse<String> response = client.send(
+                request,
+                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        if (response.statusCode() != 200) {
+            throw new IOException(
+                    "Failed to fetch maven-metadata.xml: HTTP " + response.statusCode() + " "
+                            + RPM_BUILDER_PLUGIN_METADATA_URL);
+        }
+        String body = response.body();
+        String version = extractFirstMatch(LATEST_VERSION_PATTERN, body);
+        if (version == null) {
+            version = extractFirstMatch(RELEASE_VERSION_PATTERN, body);
+        }
+        if (version == null) {
+            throw new IOException(
+                    "Could not parse latest or release version from maven-metadata.xml: "
+                            + RPM_BUILDER_PLUGIN_METADATA_URL);
+        }
+        return version;
+    }
+
+    private static String extractFirstMatch(Pattern pattern, String body) {
+        Matcher m = pattern.matcher(body);
+        return m.find() ? m.group(1).trim() : null;
     }
 
     private static TextProgressMonitor getMonitor(StringWriter writer) {

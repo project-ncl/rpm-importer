@@ -272,7 +272,8 @@ public class App implements Runnable {
             if (overrideVersionOptions == null || overrideVersionOptions.gavOverride == null) {
                 // While we have the last-mead-build value this is not reversible into a GAV. However if we call onto
                 // brew we can obtain the GAV from the NVR.
-                String lastMeadBuildFile = Files.readString(Paths.get(repository.toString(), ETT.LAST_MEAD_BUILD)).trim();
+                String lastMeadBuildFile = Files.readString(Paths.get(repository.toString(), ETT.LAST_MEAD_BUILD))
+                        .trim();
                 String buildInfo = Brew.getBuildInfo(lastMeadBuildFile);
                 lastMeadBuild = MAPPER.readValue(
                         buildInfo,
@@ -331,9 +332,8 @@ public class App implements Runnable {
             List<SimpleArtifactRef> dependencies = getDependencies(pncConfig, pncConfiguration, lastMeadBuild);
 
             String source = Utils.readTemplate();
-
+            source = source.replace("RPM_BUILDER_PLUGIN_VERSION", Utils.getLatestRpmBuilderMavenPluginVersion());
             source = updateSpecName(source);
-
             source = source
                     .replace(
                             "Generated using ",
@@ -413,7 +413,7 @@ public class App implements Runnable {
 
             Utils.commitAndPushRepository(repository, push);
 
-        } catch (IOException e) {
+        } catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);
         }
     }

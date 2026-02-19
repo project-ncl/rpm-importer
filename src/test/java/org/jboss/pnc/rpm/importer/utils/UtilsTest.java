@@ -2,6 +2,7 @@ package org.jboss.pnc.rpm.importer.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
@@ -91,6 +92,16 @@ class UtilsTest {
                         <groupId>org.jboss.pnc</groupId>
                         <artifactId>rpm-builder-maven-plugin</artifactId>
                 """));
+    }
+
+    @Test
+    void testGetLatestRpmBuilderMavenPluginVersion() throws Exception {
+        String version = Utils.getLatestRpmBuilderMavenPluginVersion();
+        assertNotNull(version);
+        assertTrue(
+                version.matches("[\\d.]+"),
+                "Version should be numeric (e.g. 1.5), got: " + version);
+        assertFalse(version.isEmpty(), "Version should not be empty");
     }
 
     @Test
