@@ -59,7 +59,7 @@
       <plugin>
         <groupId>org.jboss.pnc</groupId>
         <artifactId>rpm-builder-maven-plugin</artifactId>
-        <version>1.4</version>
+        <version>RPM_BUILDER_PLUGIN_VERSION</version>
         <extensions>true</extensions>
         <configuration>
           <attachZip>true</attachZip>
