@@ -59,7 +59,7 @@
     <jboss.snapshots.repo.url>https://central.sonatype.com/repository/maven-snapshots</jboss.snapshots.repo.url>
 
     <bacon.version>3.3.1</bacon.version>
-    <eclipse.version>7.5.0.202512021534-r</eclipse.version>
+    <eclipse.version>7.6.0.202603022253-r</eclipse.version>
 
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
