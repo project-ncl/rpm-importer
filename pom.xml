@@ -116,7 +116,7 @@
     <dependency>
       <groupId>org.commonjava.atlas</groupId>
       <artifactId>atlas-identities</artifactId>
-      <version>1.2.1</version>
+      <version>1.2.2</version>
       <exclusions>
         <!-- Avoid conflict with multiple SLF4J providers -->
         <exclusion>
