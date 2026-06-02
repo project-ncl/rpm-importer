@@ -10,7 +10,7 @@ on:
 
 jobs:
   call-maven-ci:
-    uses: project-ncl/shared-github-actions/.github/workflows/maven-ci.yml@dc16c38747e72ec04165d5e5e0177e85d21bc5c8 # main
+    uses: project-ncl/shared-github-actions/.github/workflows/maven-ci.yml@b31335d128fec7e29305eeea0b5dc7221829e1a4 # main
     with:
       build_command: "mvn -B -V install -Dvalidate-format"
       upload_artifacts: true
