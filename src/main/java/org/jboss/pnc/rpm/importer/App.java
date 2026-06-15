@@ -11,6 +11,7 @@ import static eu.maveniverse.domtrip.maven.MavenPomElements.Elements.PLUGINS;
 import static eu.maveniverse.domtrip.maven.MavenPomElements.Elements.PROPERTIES;
 import static eu.maveniverse.domtrip.maven.MavenPomElements.Elements.TYPE;
 import static eu.maveniverse.domtrip.maven.MavenPomElements.Elements.VERSION;
+import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 import java.io.File;
@@ -26,7 +27,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.commonjava.atlas.maven.ident.ref.ArtifactRef;
 import org.commonjava.atlas.maven.ident.ref.SimpleArtifactRef;
 import org.eclipse.jgit.api.Git;
@@ -157,7 +158,7 @@ public class App implements Runnable {
             java.util.logging.Logger.getLogger("org.jboss.pnc.rpm").setLevel(Level.FINE);
             log.debug("Log level set to DEBUG");
         }
-        if (StringUtils.isEmpty(branch)) {
+        if (isEmpty(branch)) {
             log.warn("No branch specified; unable to proceed");
             return;
         }
