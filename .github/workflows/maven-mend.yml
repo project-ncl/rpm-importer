@@ -24,7 +24,7 @@ jobs:
 
   call-mend-ci:
     needs: build
-    uses: project-ncl/shared-github-actions/.github/workflows/mend-ci.yml@5b317ce5a536afbc1dea14f8a9d01184ec931b14 # main
+    uses: project-ncl/shared-github-actions/.github/workflows/mend-ci.yml@95987c02b166e549f5f5506353cd3684313de523 # main
     with:
       SCA: true
       SAST: true
