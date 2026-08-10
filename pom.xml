@@ -54,7 +54,7 @@
 
     <tagNameFormat>@{project.artifactId}-@{project.version}</tagNameFormat>
 
-    <bacon.version>3.5.0</bacon.version>
+    <bacon.version>3.5.1-SNAPSHOT</bacon.version>
     <eclipse.version>7.7.1.202607240634-r</eclipse.version>
 
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
