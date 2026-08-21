@@ -262,7 +262,7 @@ public class App implements Runnable {
                     customMacros.put("scl", tagInfo.getExtra().getRpmMacroScl());
                 }
                 if (isNotEmpty(tagInfo.getExtra().getRpmMacroDist())) {
-                    customMacros.put("dist", tagInfo.getExtra().getRpmMacroDist());
+                    customMacros.put("dist", Utils.normalizeDistMacro(tagInfo.getExtra().getRpmMacroDist()));
                 }
                 log.info("Extracted macros from Brew tag {}", customMacros);
             } else {
@@ -430,7 +430,12 @@ public class App implements Runnable {
         // We know the template is a specific format so don't need to use isPresent.
         @SuppressWarnings("OptionalGetWithoutIsPresent")
         Element macroElement = plugin.get().child("configuration").get().child("macros").get();
-        macros.allMacros().forEach((k, v) -> pomEditor.insertMavenElement(macroElement, k, v));
+        macros.allMacros()
+                .forEach(
+                        (k, v) -> pomEditor.insertMavenElement(
+                                macroElement,
+                                k,
+                                "dist".equals(k) ? Utils.normalizeDistMacro(v) : v));
     }
 
     String injectSourcesMacro(Optional<SimpleArtifactRef> projectSources, String source) {

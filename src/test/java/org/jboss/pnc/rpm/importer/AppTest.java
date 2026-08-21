@@ -81,6 +81,21 @@ class AppTest {
     }
 
     @Test
+    void testAddDistMacroAddsLeadingDot(@TempDir Path tempDir) throws IOException {
+        String source = Utils.readTemplate();
+        Document document = Document.of(source);
+        PomEditor pomEditor = new PomEditor(document);
+        Element plugins = pomEditor.findChildElement(pomEditor.findChildElement(pomEditor.root(), BUILD), PLUGINS);
+        Macros macros = new Macros(Collections.singletonMap("dist", "el9eap"));
+
+        App app = new App();
+        app.repository = tempDir;
+        app.updateMacros(pomEditor, plugins, macros);
+
+        assertTrue(pomEditor.toXml().contains("<dist>.el9eap</dist>"));
+    }
+
+    @Test
     void testHandleInjectSources(@TempDir Path tempDir) throws IOException {
         File spec = new File(tempDir.toString(), "example.spec");
         spec.createNewFile();

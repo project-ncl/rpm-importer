@@ -95,6 +95,19 @@ class UtilsTest {
     }
 
     @Test
+    void testNormalizeDistMacro() {
+        assertEquals(".el7eap", Utils.normalizeDistMacro("el7eap"));
+        assertEquals(".el8eap", Utils.normalizeDistMacro("el8eap"));
+        assertEquals(".el9eap", Utils.normalizeDistMacro("el9eap"));
+        assertEquals(".el10eap", Utils.normalizeDistMacro("el10eap"));
+        assertEquals(".el8", Utils.normalizeDistMacro("el8"));
+        assertEquals(".el9eap", Utils.normalizeDistMacro(".el9eap"));
+        assertEquals("MY-CUSTOM-MACRO", Utils.normalizeDistMacro("MY-CUSTOM-MACRO"));
+        assertEquals(null, Utils.normalizeDistMacro(null));
+        assertEquals("", Utils.normalizeDistMacro(""));
+    }
+
+    @Test
     void testGetLatestRpmBuilderMavenPluginVersion() throws Exception {
         String version = Utils.getLatestRpmBuilderMavenPluginVersion();
         assertNotNull(version);

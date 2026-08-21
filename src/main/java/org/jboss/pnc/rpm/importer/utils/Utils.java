@@ -251,6 +251,26 @@ public class Utils {
     }
 
     /**
+     * RPM {@code %dist} values must include a leading {@code .} so they can be appended to
+     * {@code Release:} (e.g. {@code 1%{?dist}} becomes {@code 1.el9eap}). Brew tag extras
+     * sometimes store the value without that prefix ({@code el9eap}, {@code el8}, {@code el10}).
+     * Values that already start with {@code .}, or that are not RHEL-family {@code el<digits>}
+     * tags, are returned unchanged.
+     *
+     * @param dist the dist macro value from Brew or {@code --macros}
+     * @return the dist value with a leading {@code .} when required
+     */
+    public static String normalizeDistMacro(String dist) {
+        if (dist == null || dist.isEmpty() || dist.startsWith(".")) {
+            return dist;
+        }
+        if (dist.matches("el\\d+.*")) {
+            return "." + dist;
+        }
+        return dist;
+    }
+
+    /**
      * This function validates that the buildInfo read from Brew contains a valid Maven object. If
      * only a legacy Maven block is found (i.e. Extra/Maven instead of Extra/TypeInfo/Maven) then
      * it will also copy that to the typeInfo/Maven block to make future processing easier.
